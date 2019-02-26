@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>socket.io를 이용한 간단 채팅</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+        #messages {
+            position: absolute;
+            list-style-type: none; margin: 0; padding: 0;
+        }
+        #userWrap{
+            position: absolute;
+            top: 0;
+            right: 0;
+            min-width: 100px;
+            border: 1px solid #999;
+        }
+        .modal {
+            position: relative;
+            top: 0;
+            z-index: 1;
+            height: 100vh;
+            background-color: #249061;
+        }
+        .modal__nickName {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100px;
+            min-height: 50px;
+            border: 1px solid #e0e0e0;
+            color: #333;
+            font-style: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="wrap">
+        <form class="modal">
+            <input type="text" class="modal__nickName"></strong>
+        </form>
+        <ul id="messages"></ul>
+        <div id="userWrap">
+            <h3>현재 채팅 참여자</h3>
+            <div id="users"></div>
+        </div>
+        <form action="" name="writeForm" class="writeForm">
+            <input id="m" autocomplete="off" /><button>Send</button>
+        </form>
+    </div>
+    </body>
+
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+        const socket = io();
+        const doc = document;
+        const btn = doc.querySelector('#m');
+        socket.on('connect', function(){
+            doc.querySelector('.modal').addEventListener('submit', e => {
+                e.preventDefault();
+                socket.emit('adduser', doc.querySelector('.modal__nickName').value);
+                doc.querySelector('.modal').style.display = 'none';
+            });
+            console.log('connect to the server');
+        });
+        socket.connect();
+        socket.on('disconnect', function(){
+            console.log('disconnected to the server');
+        });
+        socket.on('updateusers', data => {
+            for(var key in data){
+                const B = doc.createElement('B');
+                B.innerHTML = `${key} </br>`;
+                doc.querySelector('#users').appendChild(B);
+            }
+        });
+        const sendMessage = () => {
+            socket.emit('chat message', btn.value);
+            btn.value = '';
+            return false;
+        };
+        doc.querySelector('#m').focus();
+        doc.querySelector('#messages').style.bottom = 50 + 'px';
+        $('.writeForm').submit(e => {
+            e.preventDefault();
+            sendMessage();
+        });
+        socket.on('chat message', function(username, data){
+            const B = doc.createElement('B');
+            B.innerHTML = `${username} : ${data} </br>`;
+            doc.querySelector('#messages').appendChild(B);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+    </script>
+</html>
